@@ -1,0 +1,29 @@
+services:
+  example_db:
+    container_name: example_db_1
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      PGDATA: /data/postgres
+      POSTGRES_DB: example
+    volumes:
+      - example_db:/data/postgres
+      - ./scripts/init-db:/docker-entrypoint-initdb.d/
+    ports:
+      - "5432:5432"
+    networks:
+      - example_db
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  example_db:
+    driver: bridge
+
+volumes:
+  example_db:
