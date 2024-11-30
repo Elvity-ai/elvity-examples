@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 psql -v -U postgres  <<-EOSQL
 
+-- Create roles and database needed for the example.
 CREATE ROLE example_admin WITH BYPASSRLS;
 CREATE USER example LOGIN PASSWORD 'example' IN ROLE example_admin;
 CREATE DATABASE rls_example OWNER example_admin;
 
-EOSQL
+\c rls_example;
 
-psql -v -U postgres -d rls_example <<-EOSQL2
+-- ensure our role can query the data.
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO example;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO example;
 
@@ -19,7 +20,7 @@ CREATE TABLE Purchase (
     Purchase_Date DATE NOT NULL
 );
 
--- enable RLS on table
+-- Enable RLS on table
 ALTER TABLE Purchase
     ENABLE ROW LEVEL SECURITY,
     FORCE ROW LEVEL SECURITY;
@@ -28,7 +29,7 @@ ALTER TABLE Purchase
 CREATE POLICY user_policy ON Purchase
     USING (User_ID = current_setting('app.current_user_id')::INT);
 
--- some data
+-- Add demo data
 INSERT INTO Purchase (User_ID, Product_Name, Quantity, Purchase_Date)
 VALUES
     (101, 'Laptop', 1, '2024-11-20'),
@@ -39,4 +40,4 @@ VALUES
 
  REVOKE ALL ON Purchase FROM PUBLIC;
  ALTER TABLE Purchase OWNER TO example_admin;
-EOSQL2
+EOSQL

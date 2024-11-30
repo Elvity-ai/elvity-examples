@@ -1,41 +1,64 @@
 #!/usr/bin/env bash
 psql -v -U postgres  <<-EOSQL
 
--- Create the admin role
-CREATE ROLE role_admin WITH LOGIN PASSWORD 'adminpassword';
+-- Create the app role role
+CREATE ROLE app_role WITH LOGIN PASSWORD 'app_role_password';
 
-CREATE DATABASE rbac_example OWNER role_admin;
+CREATE DATABASE rbac_example OWNER app_role;
 
 \c rbac_example;
 
 -- Create two tables
-CREATE TABLE table1 (
+CREATE TABLE expense (
     id SERIAL PRIMARY KEY,
-    data TEXT NOT NULL
+    date TIMESTAMP NOT NULL,
+    description TEXT NOT NULL,
+    vendor TEXT NOT NULL,
+    amount DECIMAL NOT NULL
 );
 
-CREATE TABLE table2 (
+CREATE TABLE revenue (
     id SERIAL PRIMARY KEY,
-    info TEXT NOT NULL
+    date TIMESTAMP NOT NULL,
+    customer TEXT NOT NULL,
+    product TEXT NOT NULL,
+    amount DECIMAL NOT NULL
+);
+
+CREATE TABLE salaries (
+    id SERIAL PRIMARY KEY,
+    employee TEXT NOT NULL,
+    salary DECIMAL NOT NULL
+);
+
+CREATE TABLE employee(
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL
 );
 
 -- Insert some sample data
-INSERT INTO table1 (data) VALUES ('Data for Table 1 - Row 1'), ('Data for Table 1 - Row 2');
-INSERT INTO table2 (info) VALUES ('Info for Table 2 - Row 1'), ('Info for Table 2 - Row 2');
+INSERT INTO expense (date, description, vendor, amount) VALUES ('2022-01-01', 'travel', 'airbnb', 100.00);
+INSERT INTO revenue (date, customer, product, amount) VALUES ('2022-01-01', 'XYZ Corp', 'development', 500.00);
+
+INSERT INTO employee (name, email) VALUES ('John Doe', 'j@j.com');
+INSERT INTO salaries (employee, salary) VALUES ('John Doe', 10000);
 
 -- Create roles
-CREATE ROLE role1 WITH LOGIN PASSWORD 'password1';
-CREATE ROLE role2 WITH LOGIN PASSWORD 'password2';
+CREATE ROLE hr;
+CREATE ROLE finance;
 
--- Grant the ability to switch to role1 and role2
-GRANT role1 TO role_admin;
-GRANT role2 TO role_admin;
+-- Grant the ability to switch to hr and finance
+GRANT hr TO app_role;
+GRANT finance TO app_role;
 
 -- Revoke default access for PUBLIC (everyone)
-REVOKE ALL ON table1 FROM PUBLIC;
-REVOKE ALL ON table2 FROM PUBLIC;
+REVOKE ALL ON expense FROM PUBLIC;
+REVOKE ALL ON revenue FROM PUBLIC;
+REVOKE ALL ON salaries FROM PUBLIC;
+REVOKE ALL ON employee FROM PUBLIC;
 
 -- Grant access to each role
-GRANT SELECT, INSERT, UPDATE, DELETE ON table1 TO role1;
-GRANT SELECT, INSERT, UPDATE, DELETE ON table2 TO role2;
+GRANT SELECT, INSERT, UPDATE, DELETE ON expense, revenue TO finance;
+GRANT SELECT, INSERT, UPDATE, DELETE ON salaries, employee TO hr;
 EOSQL

@@ -19,23 +19,23 @@ if __name__ == "__main__":
             cursor.close()
         return reset_current_role
 
-    # Create the engine
-    engine = create_engine("postgresql+psycopg2://role_admin:adminpassword@localhost:5432/rbac_example")
+    # Login using role_admin, so we can switch roles for access control
+    engine = create_engine("postgresql+psycopg2://app_role:app_role_password@localhost:5432/rbac_example")
 
-    # Attach events
-    event.listen(engine, "checkout", set_role('role1'))  # Set role on checkout
+    # Attach events. Set apporpriate role before running any query
+    event.listen(engine, "checkout", set_role('finance'))  # Set role on checkout
     event.listen(engine, "checkin", reset_role())       # Reset role on checkin
 
     db = SQLDatabase(engine)
 
-    print(db.run("SELECT * FROM table1 LIMIT 10"))
-    # [(1, 'Data for Table 1 - Row 1'), (2, 'Data for Table 1 - Row 2')]
+    print(db.run("SELECT * FROM revenue LIMIT 10"))
+    # [(1, datetime.datetime(2022, 1, 1, 0, 0), 'XYZ Corp', 'development', Decimal('500.00'))]
 
-    # This will error out as role1 doesn't have access to table2
+    # This will error out as finance role doesn't have access to salaries
     try:
-        print(db.run("SELECT * FROM table2 LIMIT 10"))
+        print(db.run("SELECT * FROM salaries LIMIT 10"))
     except Exception as e:
         print(e)
-        # (psycopg2.errors.InsufficientPrivilege) permission denied for table table2
+        # (psycopg2.errors.InsufficientPrivilege) permission denied for table salaries
 
     # From here if db variable can be used with langchain objects and is ensure to only be able to access
